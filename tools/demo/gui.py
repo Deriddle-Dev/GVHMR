@@ -41,6 +41,8 @@ for _key, _value in _qt_env.items():
     else:
         os.environ[_key] = _value
 
+from explorer import OutputExplorer
+
 
 class VideoPanel(QWidget):
     """Video preview with independent playback controls."""
@@ -261,6 +263,8 @@ class GVHMRWindow(QMainWindow):
         self.views.addTab(self.incam_view, "In-camera 3D")
         self.views.addTab(self.global_view, "Global 3D")
         self.views.addTab(self.combined_view, "Combined")
+        self.explorer = OutputExplorer(lambda: self.repo_path.text())
+        self.views.addTab(self.explorer, "Explore outputs")
         self.media_view = QWidget()
         media_layout = QVBoxLayout(self.media_view)
         self.audio_button = QPushButton("Open extracted audio")
@@ -360,6 +364,7 @@ class GVHMRWindow(QMainWindow):
             args.extend(["--f_mm", self.focal_length.text().strip()])
 
         self.run_video = video
+        self.explorer.clear()
         for panel in (self.tracking_view, self.keypoints_view, self.incam_view,
                       self.global_view, self.combined_view):
             panel.clear_video()
@@ -396,6 +401,7 @@ class GVHMRWindow(QMainWindow):
         self._append_log(f"Starting: {sys.executable} {' '.join(args)}\n")
         self.run_button.setEnabled(False)
         self.extract_button.setEnabled(False)
+        self.explorer.open_button.setEnabled(False)
         for control in self.input_controls:
             control.setEnabled(False)
         self.stop_button.setEnabled(True)
@@ -443,6 +449,7 @@ class GVHMRWindow(QMainWindow):
     def _finish_run(self, success: bool, message: str) -> None:
         self.run_button.setEnabled(True)
         self.extract_button.setEnabled(True)
+        self.explorer.open_button.setEnabled(True)
         for control in self.input_controls:
             control.setEnabled(True)
         self.stop_button.setEnabled(False)
@@ -487,7 +494,12 @@ class GVHMRWindow(QMainWindow):
             return
 
         self.views.setCurrentWidget(self.incam_view)
-        self._append_log(f"\nPrediction data: {result_dir / 'hmr4d_results.pt'}\n")
+        prediction_path = result_dir / "hmr4d_results.pt"
+        if prediction_path.is_file():
+            self.explorer.load_file(prediction_path, Path(self.repo_path.text()).expanduser().resolve())
+        else:
+            QMessageBox.warning(self, "Prediction data missing", f"Not found: {prediction_path}")
+        self._append_log(f"\nPrediction data: {prediction_path}\n")
         self._append_log(f"Rendered videos: {result_dir}\n")
         QMessageBox.information(self, "GVHMR complete", f"Outputs are in:\n{result_dir}")
 
@@ -537,6 +549,7 @@ class GVHMRWindow(QMainWindow):
             self.process.terminate()
             if not self.process.waitForFinished(3000):
                 self.process.kill()
+        self.explorer.shutdown()
         super().closeEvent(event)
 
 
