@@ -40,6 +40,21 @@ python tools/demo/demo.py --video=docs/example_video/tennis.mp4 -s
 python tools/demo/demo_folder.py -f inputs/demo/folder_in -d outputs/demo/folder_out -s
 ```
 
+### Desktop viewer
+
+After completing [installation](docs/INSTALL.md), install the additional GUI and optional transcription dependencies with
+`pip install -r tools/demo/requirements-gui.txt`. Install `ffmpeg` and `ffprobe` on your PATH for audio and embedded subtitle extraction; install `tesseract` for OCR. Launch with:
+
+```shell
+python tools/demo/gui.py
+```
+
+Select a video and run GVHMR to view the input, person tracking, 2D keypoints, in-camera, global, and combined renders. Runs are saved in separate folders under the selected output directory, including the original `hmr4d_results.pt` predictions and intermediate files. The model requires a compatible CUDA GPU and the checkpoints and body models described in the installation guide.
+
+The **Extract audio and text** button independently saves the first audio stream as WAV and converts embedded text subtitle streams to SRT. Optional speech transcription uses faster-whisper's `small` model on CPU (it downloads model weights on first use); OCR uses Tesseract on one frame every two seconds. Results, missing streams, and errors appear in the Audio and text tab and are saved with a manifest. Image-based subtitle streams may not be convertible to text; use OCR for visible captions. Extracted audio opens in the system's media player.
+
+These are local sidecar features: **GVHMR uses only the video, not the extracted text or audio**. Extraction may be incomplete due to speech recognition, OCR, sampling, or subtitle format limitations.
+
 ### Reproduce
 1. **Test**:
 To reproduce the 3DPW, RICH, and EMDB results in a single run, use the following command:
